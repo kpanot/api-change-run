@@ -1,0 +1,46 @@
+{
+  "name": "api-change-run",
+  "version": "0.0.1",
+  "description": "Execute command on API change",
+  "main": "dist/public-api.mjs",
+  "types": "dist/public-api.d.mts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kpanot/api-change-run.git"
+  },
+  "author": "Kilian Panot",
+  "license": "MIT",
+  "readme": "./README.md",
+  "bugs": {
+    "url": "https://github.com/kpanot/api-change-run/issues"
+  },
+  "homepage": "https://github.com/kpanot/api-change-run#readme",
+  "dependencies": {
+    "commander": "^9.4.1",
+    "loglevel": "^1.8.0",
+    "node-fetch": "^3.2.10",
+    "rxjs": "^7.5.7"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.2.1",
+    "@types/node": "^18.0.0",
+    "jest": "^29.2.2",
+    "ts-jest": "^29.0.3",
+    "type-fest": "^3.1.0",
+    "typescript": "^4.8.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/"
+  ],
+  "bin": {
+    "api-change-poll": "dist/poll-url-change.cli.mjs"
+  }
+}

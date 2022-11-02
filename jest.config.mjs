@@ -5,11 +5,15 @@
 
 export default {
   preset: 'ts-jest',
+  extensionsToTreatAsEsm: ['.mts'],
   transform: {
-    '^.+\\.spec\\.mts$': ['ts-jest', {
-      tsconfig: '<rootDir>/tsconfig.test.json',
-      useESM: true
-    }],
+    '^.+\\.m?[tj]sx?$': [
+      'ts-jest',
+      {
+        tsconfig: '<rootDir>/tsconfig.test.json',
+        useESM: true
+      }
+    ],
   },
   // All imported modules in your tests should be mocked automatically
   // automock: false,

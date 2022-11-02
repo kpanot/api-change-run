@@ -1,9 +1,9 @@
-import { generateCommand } from './poll-url-change.mjs';
+import { generateCommand, startPolling } from './poll-url-change.mjs';
+
 
 describe('Pool-url-change', () => {
 
   describe('generateCommand function', () => {
-
     test('should keep the original command', () => {
       const command = generateCommand('test command', false, 'response');
       expect(command).toBe('test command');
@@ -16,10 +16,9 @@ describe('Pool-url-change', () => {
 
     test('should add replace response variable', () => {
       const command = generateCommand('test --command ${RESPONSE}', false, 'res');
-      expect(command).toBe('npm run test --command res');
+      expect(command).toBe('test --command res');
     });
   });
 
+  // TODO implement tests for startPolling
 });
-
-// TODO implement tests

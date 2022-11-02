@@ -104,7 +104,7 @@
     "src/**/*.mts"
   ],
   "exclude": [
-    "src/**/*.spec.mts"
+    "src/**/*.spec.*"
   ],
   "references": [
     {

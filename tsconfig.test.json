@@ -4,6 +4,6 @@
   "composite": true
  },
   "include": [
-    "src/**/*.spec.mts"
+    "src/**/*.spec.*"
    ]
 }

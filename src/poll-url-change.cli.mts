@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { Command } from 'commander';
 import type { PackageJson } from 'type-fest';
 
-import { executePolling } from './poll-url-change.mjs';
+import { startPolling } from './poll-url-change.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageJsonPath = resolve(__dirname, '..', 'package.json');
@@ -27,5 +27,5 @@ const program = new Command('api-change-run')
   })
   .parse();
 
-const subscription = executePolling({ ...program.opts(), commandTpl})
+const subscription = startPolling({ ...program.opts(), commandTpl})
 process.on('exit', () => subscription.unsubscribe());

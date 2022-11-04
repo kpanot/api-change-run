@@ -10,7 +10,7 @@ import {
   tap,
   map,
 } from 'rxjs/operators';
-import logger from 'Loglevel';
+import logger from 'loglevel';
 
 const isYarn = !!process.env.npm_execpath?.endsWith('yarn');
 
@@ -44,6 +44,8 @@ export interface PollUrlChangeOptions {
  * @returns 
  */
 export function generateCommand(commandTpl: string, script: boolean, response?: string): string {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   const RESPONSE = response || '';
   const command = eval(`\`${commandTpl}\``);
   return script ? `${isYarn ? 'yarn' : 'npm'} run ${command}` : command;

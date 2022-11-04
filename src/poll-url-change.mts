@@ -59,7 +59,7 @@ export function generateCommand(commandTpl: string, script: boolean, response?: 
  */
 export function startPolling(options: PollUrlChangeOptions) {
   const { uri, delay, init, cwd, script, verbose, commandTpl } = options;
-  logger.setLevel(verbose ? 'DEBUG' : 'INFO');
+  logger.setLevel(verbose ? 'DEBUG' : 'INFO', true);
   const runningCommandSubject = new BehaviorSubject(false);
   const runningCommand$ = runningCommandSubject.pipe(
     tap((value) => {
@@ -93,6 +93,7 @@ export function startPolling(options: PollUrlChangeOptions) {
     .subscribe((response) => {
       runningCommandSubject.next(true);
       const command = generateCommand(commandTpl, script, response);
+      logger.debug(`Run "${command}" in ${cwd}`);
       const run = exec(command, { cwd, env: process.env });
       run.stdout?.pipe(process.stdout);
       run.stderr?.pipe(process.stderr);

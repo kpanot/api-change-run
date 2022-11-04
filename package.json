@@ -1,13 +1,14 @@
 {
   "name": "api-change-run",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Execute command on API change",
   "main": "dist/public-api.mjs",
   "types": "dist/public-api.d.mts",
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "tt": "node -e \"console.log('ok')\""
   },
   "repository": {
     "type": "git",

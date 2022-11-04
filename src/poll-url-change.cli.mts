@@ -19,9 +19,9 @@ const program = new Command('api-change-run')
   .requiredOption('-u, --uri <URI>', 'URL to the API to watch')
   .option('-d --delay <number>', 'Delay between polling in second', (v) => +v, 200)
   .option('--cwd <path>', 'Current working directory', (v) => v, process.cwd())
-  .option('-i, --init', 'Trigger a run on the initial connection', (v) => !!v, false)
-  .option('-s --script', 'Indicate that the given argument is a script that need to be run with npm (or yarn)', (v) => !!v, false)
-  .option('-v, --verbose', 'Current working directory', (v) => !!v, false)
+  .option('-i, --init', 'Trigger a run on the initial connection')
+  .option('-s --script', 'Indicate that the given argument is a script that need to be run with npm (or yarn)')
+  .option('-v, --verbose', 'Current working directory')
   .action((command) => {
     commandTpl = command;
   })

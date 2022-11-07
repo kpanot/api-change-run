@@ -1,5 +1,5 @@
 import { exec } from 'node:child_process';
-import { interval, BehaviorSubject, from, of } from 'rxjs';
+import { interval, BehaviorSubject, from, of, combineLatest } from 'rxjs';
 import {
   withLatestFrom,
   filter,
@@ -7,12 +7,17 @@ import {
   catchError,
   pairwise,
   startWith,
-  tap,
   map,
 } from 'rxjs/operators';
 import logger from 'loglevel';
 
 const isYarn = !!process.env.npm_execpath?.endsWith('yarn');
+
+export interface BasicAuth {
+  url: string;
+  username: string;
+  password: string;
+}
 
 /**
  * Option of the poll execution
@@ -32,6 +37,9 @@ export interface PollUrlChangeOptions {
   verbose: boolean;
   /** Template of the command to execute */
   commandTpl: string;
+  /** Access Token used to contact the Api */
+  accessToken?: string;
+  basicAuth?: BasicAuth;
 }
 
 /**
@@ -52,56 +60,118 @@ export function generateCommand(commandTpl: string, script: boolean, response?: 
 }
 
 /**
+ * Retrieve Access Token from Basic Authentication
+ * @returns 
+ */
+export async function retrieveAccessToken({username, url, password}: BasicAuth) {
+  const headers = new Headers();
+  headers.set('Content-Type', 'application/json')
+  headers.set('Authorization', 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64'));
+  logger.debug('auth - Initialize call Basic Auth');
+  let res = await fetch(url, { headers, method: 'POST' });
+  let value: {access_token: string} | null = null;
+  try {
+    value = await res.json()
+    logger.debug(`auth - Basic Auth response: ${JSON.stringify(value)}`);
+  } catch { 
+    // ignored
+  }
+  if (!res.ok || !value || !value.access_token) {
+    headers.delete('Authorization');
+    logger.debug('auth - Initialize call Basic Auth with body parameters');
+    res = await fetch(url, { headers, method: 'POST', body: JSON.stringify({ username, password }) });
+    try {
+      logger.debug(`auth - Basic Auth with body parameters response: ${JSON.stringify(value)}`);
+      value = await res.json()
+    } catch {
+      // ignored
+    }
+  }
+  return value && value.access_token || undefined;
+}
+
+/**
  * Start API Watch
  * 
  * @param options Options of the API watcher
  * @returns 
  */
 export function startPolling(options: PollUrlChangeOptions) {
-  const { uri, delay, init, cwd, script, verbose, commandTpl } = options;
+  const headers = new Headers();
+  headers.set('Content-Type', 'application/json')
+
+  const { uri, delay, init, cwd, script, verbose, commandTpl, basicAuth } = options;
+  let { accessToken } = options;
   logger.setLevel(verbose ? 'DEBUG' : 'INFO', true);
+  const retrieveNewAccessTokenSubject = new BehaviorSubject(false);
   const runningCommandSubject = new BehaviorSubject(false);
-  const runningCommand$ = runningCommandSubject.pipe(
-    tap((value) => {
+
+  const call$ = combineLatest([interval(delay), runningCommandSubject, retrieveNewAccessTokenSubject]).pipe(
+      filter(([, running, authRetrieving]) => !running && !authRetrieving),
+      switchMap(() => {
+        if (accessToken) {
+          headers.set('Authorization', `Bearer ${accessToken}`);
+        } else {
+          headers.delete('Authorization');
+        }
+        return from(fetch(uri, { headers })).pipe(catchError(() => of(null)));
+      })
+  );
+
+  const retrieveNewAccessToken$ = call$.pipe(
+    withLatestFrom(retrieveNewAccessTokenSubject),
+    filter(([res, downloading]) => !downloading && !!res && (res.status === 401 || res.status === 403)),
+  )
+
+  const subscription = call$.pipe(
+    filter((req): req is Response => {
+      const ok = !!req && req.ok;
+      if (!ok) {
+        logger.debug('watcher - Skip rerun because of call failure');
+        logger.debug(`watcher - Status: ${req?.status || 'unknown'}`);
+        if (accessToken && (req?.status === 401 || req?.status === 403)) {
+          logger.warn(`The given Access Token does not get access to watched URI (token: ${accessToken})`);
+        }
+      }
+      return ok;
+    }),
+    switchMap((req) => req.text()),
+    startWith(undefined),
+    pairwise(),
+    filter(([prev, current]) => (init && !prev) || prev !== current),
+    map(([, current]) => current),
+  )
+  .subscribe((response) => {
+    runningCommandSubject.next(true);
+    const command = generateCommand(commandTpl, script, response);
+    logger.debug(`watcher - Run "${command}" in ${cwd}`);
+    const run = exec(command, { cwd, env: process.env });
+    run.stdout?.pipe(process.stdout);
+    run.stderr?.pipe(process.stderr);
+    run.on('error', (err) => logger.warn(err));
+    run.on('exit', () => {
+      runningCommandSubject.next(false);
+    });
+  });
+
+  subscription.add(
+    runningCommandSubject.subscribe((value) => {
       if (!value) {
         logger.info(`Listening for change on ${uri}`);
       } else {
         logger.info('Launching command ...');
       }
-    }),
+    })
   );
 
-  const subscription = interval(delay)
-    .pipe(
-      withLatestFrom(runningCommand$),
-      filter(([, running]) => !running),
-      switchMap(() => from(fetch(uri)).pipe(catchError(() => of(null)))),
-      filter((req): req is Response => {
-        const ok = !!req && req.ok;
-        if (!ok) {
-          logger.debug('Skip rerun because of call failure');
-          logger.debug(`Status: ${req?.status || 'unknown'}`);
-        }
-        return ok;
-      }),
-      switchMap((req) => req.text()),
-      startWith(undefined),
-      pairwise(),
-      filter(([prev, current]) => (init && !prev) || prev !== current),
-      map(([, current]) => current),
-    )
-    .subscribe((response) => {
-      runningCommandSubject.next(true);
-      const command = generateCommand(commandTpl, script, response);
-      logger.debug(`Run "${command}" in ${cwd}`);
-      const run = exec(command, { cwd, env: process.env });
-      run.stdout?.pipe(process.stdout);
-      run.stderr?.pipe(process.stderr);
-      run.on('error', (err) => logger.warn(err));
-      run.on('exit', () => {
-        runningCommandSubject.next(false);
-      });
+  if (basicAuth) {
+    const accessTokenSubscription = retrieveNewAccessToken$.subscribe(async () => {
+      retrieveNewAccessTokenSubject.next(true);
+      accessToken = await retrieveAccessToken(basicAuth);
+      retrieveNewAccessTokenSubject.next(false);
     });
+    subscription.add(accessTokenSubscription);
+  }
 
   return subscription;
 }

@@ -29,17 +29,19 @@ npx api-change-poll --help
 # Execute commands on API change
 
 # Arguments:
-#   command              Command to execute.
+#   command                     Command to execute
 
 # Options:
-#   -V, --version        output the version number
-#   -u, --uri <URI>      URL to the API to watch
-#   -d --delay <number>  Delay between polling in second (default: 200)
-#   --cwd <path>         Current working directory (default: process.cwd())
-#   -i, --init           Trigger a run on the initial connection (default: false)
-#   -s --script          Indicate that the given argument is a script that need to be run with npm (or yarn) (default: false)
-#   -v, --verbose        Current working directory (default: false)
-#   -h, --help           Display help for command
+#   -V, --version               output the version number
+#   -u, --uri <URI>             URL to the API to watch
+#   -d --delay <number>         Delay between polling in second (default: 200)
+#   --cwd <path>                Current working directory (default: process.cwd())
+#   -a, --access-token <token>  Access Token to be used as Bearer token
+#   -b, --basic-auth <uri>      Basic authentication URL (ex: http://me:pwd@localhost/api)
+#   -i, --init                  Trigger a run on the initial connection
+#   -s --script                 Indicate that the given argument is a script that need to be run with npm (or yarn)
+#   -v, --verbose               Current working directory
+#   -h, --help                  display help for command
 ```
 
 ### Command
@@ -61,3 +63,11 @@ npx api-change-poll --uri http://localhost/api --script test
 yarn api-change-poll --uri http://localhost/api --script test
 # will execute `yarn run test`
 ```
+
+### Authentification
+
+The `api-change-poll` command supports support call requiring authentication via Bearer Token.
+To activate the identification 2 options can be provided:
+
+- Providing the Token to use via the option `--access-token`.
+- Providing the URI to connect via Basic Auth to retrieve the access_token information via `--basic-auth`.

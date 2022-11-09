@@ -13,9 +13,21 @@ import logger from 'loglevel';
 
 const isYarn = !!process.env.npm_execpath?.endsWith('yarn');
 
-export interface BasicAuth {
+/** Basic Authentication object */
+export interface LoginUserPassword {
+  /** URL uses to login */
   url: string;
+  /** Username to login */
   username: string;
+  /** Password to login */
+  password: string;
+}
+
+/** Basic Authentication object */
+export interface BasicAuth {
+  /** Username to login */
+  username: string;
+  /** Password to login */
   password: string;
 }
 
@@ -39,7 +51,10 @@ export interface PollUrlChangeOptions {
   commandTpl: string;
   /** Access Token used to contact the Api */
   accessToken?: string;
+  /** Basic Authentication use to request access token */
   basicAuth?: BasicAuth;
+  /** Object to login to request an access_token */
+  loginUrl?: LoginUserPassword;
 }
 
 /**
@@ -61,12 +76,13 @@ export function generateCommand(commandTpl: string, script: boolean, response?: 
 
 /**
  * Retrieve Access Token from Basic Authentication
+ *
  * @returns 
  */
-export async function retrieveAccessToken({username, url, password}: BasicAuth) {
+export async function retrieveAccessToken({ username, url, password }: LoginUserPassword) {
   const headers = new Headers();
   headers.set('Content-Type', 'application/json')
-  headers.set('Authorization', 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64'));
+  headers.set('Authorization', `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`);
   logger.debug('auth - Initialize call Basic Auth');
   let res = await fetch(url, { headers, method: 'POST' });
   let value: {access_token: string} | null = null;
@@ -91,31 +107,41 @@ export async function retrieveAccessToken({username, url, password}: BasicAuth) 
 }
 
 /**
+ * Process API call
+ *
+ * @param uri URI of the API to check
+ * @param authentication Authentication information to process the call
+ * @returns 
+ */
+export function processCall(uri: string, authentication: { accessToken?: string, basicAuth?: BasicAuth}) {
+  const headers = new Headers();
+  headers.set('Content-Type', 'application/json');
+  if (authentication.accessToken) {
+    headers.set('Authorization', `Bearer ${authentication.accessToken}`);
+  } else if (authentication.basicAuth) {
+    headers.set('Authorization', `Basic ${Buffer.from(`${authentication.basicAuth.username}:${authentication.basicAuth.password}`).toString('base64')}`);
+  } else {
+    headers.delete('Authorization');
+  }
+  return fetch(uri, { headers });
+}
+
+/**
  * Start API Watch
  * 
  * @param options Options of the API watcher
  * @returns 
  */
 export function startPolling(options: PollUrlChangeOptions) {
-  const headers = new Headers();
-  headers.set('Content-Type', 'application/json')
-
-  const { uri, delay, init, cwd, script, verbose, commandTpl, basicAuth } = options;
+  const { uri, delay, init, cwd, script, verbose, commandTpl, basicAuth, loginUrl } = options;
   let { accessToken } = options;
   logger.setLevel(verbose ? 'DEBUG' : 'INFO', true);
   const retrieveNewAccessTokenSubject = new BehaviorSubject(false);
   const runningCommandSubject = new BehaviorSubject(false);
 
   const call$ = combineLatest([interval(delay), runningCommandSubject, retrieveNewAccessTokenSubject]).pipe(
-      filter(([, running, authRetrieving]) => !running && !authRetrieving),
-      switchMap(() => {
-        if (accessToken) {
-          headers.set('Authorization', `Bearer ${accessToken}`);
-        } else {
-          headers.delete('Authorization');
-        }
-        return from(fetch(uri, { headers })).pipe(catchError(() => of(null)));
-      })
+    filter(([, running, authRetrieving]) => !running && !authRetrieving),
+    switchMap(() => from(processCall(uri, {accessToken, basicAuth})).pipe(catchError(() => of(null))))
   );
 
   const retrieveNewAccessToken$ = call$.pipe(
@@ -129,8 +155,12 @@ export function startPolling(options: PollUrlChangeOptions) {
       if (!ok) {
         logger.debug('watcher - Skip rerun because of call failure');
         logger.debug(`watcher - Status: ${req?.status || 'unknown'}`);
-        if (accessToken && (req?.status === 401 || req?.status === 403)) {
-          logger.warn(`The given Access Token does not get access to watched URI (token: ${accessToken})`);
+        if (req?.status === 401 || req?.status === 403) {
+          if (accessToken) {
+            logger.warn(`The given Access Token does not get access to watched URI (token: ${accessToken})`);
+          } else if (basicAuth) {
+            logger.warn('Invalid basic authentication');
+          }
         }
       }
       return ok;
@@ -149,9 +179,7 @@ export function startPolling(options: PollUrlChangeOptions) {
     run.stdout?.pipe(process.stdout);
     run.stderr?.pipe(process.stderr);
     run.on('error', (err) => logger.warn(err));
-    run.on('exit', () => {
-      runningCommandSubject.next(false);
-    });
+    run.on('exit', () => runningCommandSubject.next(false));
   });
 
   subscription.add(
@@ -164,10 +192,10 @@ export function startPolling(options: PollUrlChangeOptions) {
     })
   );
 
-  if (basicAuth) {
+  if (loginUrl) {
     const accessTokenSubscription = retrieveNewAccessToken$.subscribe(async () => {
       retrieveNewAccessTokenSubject.next(true);
-      accessToken = await retrieveAccessToken(basicAuth);
+      accessToken = await retrieveAccessToken(loginUrl);
       retrieveNewAccessTokenSubject.next(false);
     });
     subscription.add(accessTokenSubscription);

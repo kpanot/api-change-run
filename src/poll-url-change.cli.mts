@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { Command } from 'commander';
 import type { PackageJson } from 'type-fest';
 
-import { BasicAuth, startPolling } from './poll-url-change.mjs';
+import { BasicAuth, LoginUserPassword, startPolling } from './poll-url-change.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageJsonPath = resolve(__dirname, '..', 'package.json');
@@ -21,7 +21,7 @@ const program = new Command('api-change-run')
   .option('-d --delay <number>', 'Delay between polling in second', (v) => +v, 200)
   .option('--cwd <path>', 'Current working directory', (v) => v, process.cwd())
   .option('-a, --access-token <token>', 'Access Token to be used as Bearer token')
-  .option<BasicAuth>('-b, --basic-auth <uri>', 'Basic authentication URL (ex: http://me:pwd@localhost/api)', (url) => {
+  .option<LoginUserPassword>('-l, --login-url <url>', 'Basic authentication URL to call to retrieve access token (ex: http://me:pwd@localhost/api)', (url) => {
     const match = url.match(basicAuthRegExp);
     if (match) {
       return {
@@ -30,7 +30,14 @@ const program = new Command('api-change-run')
         password: match[3]
       };
     }
-    throw new Error('Wrong basic auth uri format')
+    throw new Error('Wrong login uri format')
+  })
+  .option<BasicAuth>('-b, --basic-auth <user:password>', 'Use Basic Authentication to contact the API', (basicAuth) => {
+    const [username, password] = basicAuth.split(':');
+    if (!username || !password) {
+      throw new Error('Wrong basic auth format')
+    }
+    return { username, password };
   })
   .option('-i, --init', 'Trigger a run on the initial connection')
   .option('-s --script', 'Indicate that the given argument is a script that need to be run with npm (or yarn)')

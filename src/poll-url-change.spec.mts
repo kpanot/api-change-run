@@ -1,4 +1,4 @@
-import { generateCommand, startPolling } from './poll-url-change.mjs';
+import { generateCommand } from './poll-url-change.mjs';
 
 
 describe('Pool-url-change', () => {
@@ -11,7 +11,7 @@ describe('Pool-url-change', () => {
 
     test('should add "npm run" prefix if script', () => {
       const command = generateCommand('test --command', true);
-      expect(command).toBe('npm run test --command');
+      expect(command).toMatch(/ run test --command$/);
     });
 
     test('should add replace response variable', () => {

@@ -29,19 +29,20 @@ npx api-change-poll --help
 # Execute commands on API change
 
 # Arguments:
-#   command                     Command to execute
+#   command                           Command to execute
 
 # Options:
-#   -V, --version               output the version number
-#   -u, --uri <URI>             URL to the API to watch
-#   -d --delay <number>         Delay between polling in second (default: 200)
-#   --cwd <path>                Current working directory (default: process.cwd())
-#   -a, --access-token <token>  Access Token to be used as Bearer token
-#   -b, --basic-auth <uri>      Basic authentication URL (ex: http://me:pwd@localhost/api)
-#   -i, --init                  Trigger a run on the initial connection
-#   -s --script                 Indicate that the given argument is a script that need to be run with npm (or yarn)
-#   -v, --verbose               Current working directory
-#   -h, --help                  display help for command
+#   -V, --version                     output the version number
+#   -u, --uri <URI>                   URL to the API to watch
+#   -d --delay <number>               Delay between polling in second (default: 200)
+#   --cwd <path>                      Current working directory (default: process.cwd())
+#   -a, --access-token <token>        Access Token to be used as Bearer token
+#   -l, --login-url <url>             Basic authentication URL to call to retrieve access token (ex: http://me:pwd@localhost/api)
+#   -b, --basic-auth <user:password>  Use Basic Authentication to contact the API
+#   -i, --init                        Trigger a run on the initial connection
+#   -s --script                       Indicate that the given argument is a script that need to be run with npm (or yarn)
+#   -v, --verbose                     Current working directory
+#   -h, --help                        display help for command
 ```
 
 ### Command

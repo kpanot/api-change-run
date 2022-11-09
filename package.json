@@ -1,6 +1,6 @@
 {
   "name": "api-change-run",
-  "version": "0.2.0",
+  "version": "0.0.0-placeholder",
   "description": "Execute command on API change",
   "main": "dist/public-api.mjs",
   "types": "dist/public-api.d.mts",

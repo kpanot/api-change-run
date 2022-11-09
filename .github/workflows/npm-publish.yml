@@ -48,7 +48,7 @@ jobs:
         with:
           name: dist
       - name: Set new version
-        run: yarn version ${{ env.RELEASE_VERSION }}
+        run: npm version --no-git-tag-version ${{ env.RELEASE_VERSION }}
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.ACCESS_TOKEN }}

@@ -1,10 +1,9 @@
 import { exec } from 'node:child_process';
-import { interval, BehaviorSubject, from, of, combineLatest } from 'rxjs';
+import { interval, BehaviorSubject, combineLatest } from 'rxjs';
 import {
   withLatestFrom,
   filter,
   switchMap,
-  catchError,
   pairwise,
   startWith,
   map,
@@ -141,7 +140,7 @@ export function startPolling(options: PollUrlChangeOptions) {
 
   const call$ = combineLatest([interval(delay), runningCommandSubject, retrieveNewAccessTokenSubject]).pipe(
     filter(([, running, authRetrieving]) => !running && !authRetrieving),
-    switchMap(() => from(processCall(uri, {accessToken, basicAuth})).pipe(catchError(() => of(null))))
+    switchMap(() => processCall(uri, {accessToken, basicAuth}))
   );
 
   const retrieveNewAccessToken$ = call$.pipe(
@@ -171,15 +170,21 @@ export function startPolling(options: PollUrlChangeOptions) {
     filter(([prev, current]) => (init && !prev) || prev !== current),
     map(([, current]) => current),
   )
-  .subscribe((response) => {
-    runningCommandSubject.next(true);
-    const command = generateCommand(commandTpl, script, response);
-    logger.debug(`watcher - Run "${command}" in ${cwd}`);
-    const run = exec(command, { cwd, env: process.env });
-    run.stdout?.pipe(process.stdout);
-    run.stderr?.pipe(process.stderr);
-    run.on('error', (err) => logger.warn(err));
-    run.on('exit', () => runningCommandSubject.next(false));
+  .subscribe({
+    next: (response) => {
+      runningCommandSubject.next(true);
+      const command = generateCommand(commandTpl, script, response);
+      logger.debug(`watcher - Run "${command}" in ${cwd}`);
+      const run = exec(command, { cwd, env: process.env });
+      run.stdout?.pipe(process.stdout);
+      run.stderr?.pipe(process.stderr);
+      run.on('error', (err) => logger.warn(err));
+      run.on('exit', () => runningCommandSubject.next(false));
+    },
+    error: (err) => {
+      logger.error(err);
+      process.exit(2);
+    }
   });
 
   subscription.add(

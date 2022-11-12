@@ -131,7 +131,7 @@ export function processCall(uri: string, authentication: { accessToken?: string,
  * @param options Options of the API watcher
  * @returns 
  */
-export function startPolling(options: PollUrlChangeOptions) {
+export function startPolling(options: PollUrlChangeOptions, executor: typeof exec = exec) {
   const { uri, delay, init, cwd, script, verbose, commandTpl, basicAuth, loginUrl } = options;
   let { accessToken } = options;
   logger.setLevel(verbose ? 'DEBUG' : 'INFO', true);
@@ -175,7 +175,7 @@ export function startPolling(options: PollUrlChangeOptions) {
       runningCommandSubject.next(true);
       const command = generateCommand(commandTpl, script, response);
       logger.debug(`watcher - Run "${command}" in ${cwd}`);
-      const run = exec(command, { cwd, env: process.env });
+      const run = executor(command, { cwd, env: process.env });
       run.stdout?.pipe(process.stdout);
       run.stderr?.pipe(process.stderr);
       run.on('error', (err) => logger.warn(err));

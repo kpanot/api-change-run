@@ -44,8 +44,6 @@
   "files": [
     "dist/"
   ],
-  "bin": {
-    "api-change-run": "dist/poll-url-change.cli.mjs"
-  },
+  "bin": "dist/poll-url-change.cli.mjs",
   "packageManager": "yarn@3.3.0"
 }

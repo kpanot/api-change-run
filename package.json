@@ -47,5 +47,5 @@
   "bin": {
     "api-change-poll": "dist/poll-url-change.cli.mjs"
   },
-  "packageManager": "yarn@3.2.4"
+  "packageManager": "yarn@3.3.0"
 }

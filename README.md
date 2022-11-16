@@ -4,7 +4,7 @@ Listen an URL change and trigger a command run on change.
 
 ## Install
 
-Setup the `api-change-run` package as devDependencies:
+The `api-change-run` package can be installed as devDependencies:
 
 ```bash
 # NPM:
@@ -14,17 +14,25 @@ npm install --save-dev api-change-run
 yarn add --dev api-change-run
 ```
 
-## api-change-poll
+or run directly using `npx` command:
 
-The `api-change-poll` CLI is polling a given URL to detect changes.
+```bash
+npx api-change-run --help
+```
+
+## api-change-run
+
+The `api-change-run` CLI is polling a given URL to detect changes.
 The main purpose is to execute a command when a Rest API response changes.
+
+> **Note:** The alias `api-change-poll` CLI can be used when the package is locally installed.
 
 ### Usage
 
 ```bash
-npx api-change-poll --help
+npx api-change-run --help
 
-# Usage: api-change-poll [options] <command>
+# Usage: api-change-run [options] <command>
 
 # Execute commands on API change
 
@@ -52,22 +60,22 @@ The command will be executed via Node child process.
 The response content of the call can be referred in the command via the template string `${RESPONSE}` as following:
 
 ```powershell
-npx api-change-poll --uri http://localhost/api "echo 'the response `${RESPONSE}'"
+npx api-change-run --uri http://localhost/api "echo 'the response `${RESPONSE}'"
 ```
 
 If the options `--script` is provided, the command will be handle as NPM script and will will be executed with `npm run <command>` (or `yarn run <command>`).
 
 ```powershell
-npx api-change-poll --uri http://localhost/api --script test
+npx api-change-run --uri http://localhost/api --script test
 # will execute `npm run test`
 
-yarn api-change-poll --uri http://localhost/api --script test
+yarn dlx api-change-run --uri http://localhost/api --script test
 # will execute `yarn run test`
 ```
 
 ### Authentification
 
-The `api-change-poll` command supports support call requiring authentication via Bearer Token.
+The `api-change-run` command supports support call requiring authentication via Bearer Token.
 To activate the identification 2 options can be provided:
 
 - Providing the Token to use via the option `--access-token`.

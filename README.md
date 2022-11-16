@@ -25,8 +25,6 @@ npx api-change-run --help
 The `api-change-run` CLI is polling a given URL to detect changes.
 The main purpose is to execute a command when a Rest API response changes.
 
-> **Note:** The alias `api-change-poll` CLI can be used when the package is locally installed.
-
 ### Usage
 
 ```bash

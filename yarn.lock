@@ -1230,6 +1230,7 @@ __metadata:
     type-fest: ^3.1.0
     typescript: ^4.8.4
   bin:
+    api-change-poll: ./dist/poll-url-change.cli.mjs
     api-change-run: ./dist/poll-url-change.cli.mjs
   languageName: unknown
   linkType: soft

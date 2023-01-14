@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/kpanot/api-change-run#readme",
   "dependencies": {
-    "commander": "^9.4.1",
+    "commander": "^10.0.0",
     "loglevel": "^1.8.0",
     "node-fetch": "^3.2.10",
     "rxjs": "^7.5.7"

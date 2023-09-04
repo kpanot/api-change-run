@@ -74,6 +74,23 @@ export function generateCommand(commandTpl: string, script: boolean, response?: 
 }
 
 /**
+ * Retry a call until the fetch command success
+ * @param fetchCallFactory function to call to process to the call
+ * @param delay delay between retry
+ */
+export async function retryCallUntilToMakeIt(fetchCallFactory: () => Promise<Response>, delay = 1000) {
+  let res: Response | undefined;
+  do {
+    try {
+      res = await fetchCallFactory();
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  } while (!res);
+  return res;
+}
+
+/**
  * Retrieve Access Token from Basic Authentication
  *
  * @returns 
@@ -83,7 +100,8 @@ export async function retrieveAccessToken({ username, url, password }: LoginUser
   headers.set('Content-Type', 'application/json')
   headers.set('Authorization', `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`);
   logger.debug('auth - Initialize call Basic Auth');
-  let res = await fetch(url, { headers, method: 'POST' });
+  let res = await retryCallUntilToMakeIt(() => fetch(url, { headers, method: 'POST' }));
+
   let value: {access_token: string} | null = null;
   try {
     value = await res.json()
@@ -94,7 +112,8 @@ export async function retrieveAccessToken({ username, url, password }: LoginUser
   if (!res.ok || !value || !value.access_token) {
     headers.delete('Authorization');
     logger.debug('auth - Initialize call Basic Auth with body parameters');
-    res = await fetch(url, { headers, method: 'POST', body: JSON.stringify({ username, password }) });
+    res = await retryCallUntilToMakeIt(() => fetch(url, { headers, method: 'POST', body: JSON.stringify({ username, password }) }));
+
     try {
       logger.debug(`auth - Basic Auth with body parameters response: ${JSON.stringify(value)}`);
       value = await res.json()
@@ -140,7 +159,8 @@ export function startPolling(options: PollUrlChangeOptions, executor: typeof exe
 
   const call$ = combineLatest([interval(delay), runningCommandSubject, retrieveNewAccessTokenSubject]).pipe(
     filter(([, running, authRetrieving]) => !running && !authRetrieving),
-    switchMap(() => processCall(uri, {accessToken, basicAuth}))
+    switchMap(() => processCall(uri, {accessToken, basicAuth}).catch(() => Promise.resolve())),
+    filter((response): response is Response => !!response)
   );
 
   const retrieveNewAccessToken$ = call$.pipe(

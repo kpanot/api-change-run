@@ -3,11 +3,12 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { readFileSync } from 'node:fs';
+import { fork } from 'node:child_process';
 
 import { Command } from 'commander';
 import type { PackageJson } from 'type-fest';
 
-import { BasicAuth, LoginUserPassword, startPolling } from './poll-url-change.mjs';
+import { BasicAuth, LoginUserPassword, PollUrlChangeOptions, startPolling } from './poll-url-change.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageJsonPath = resolve(__dirname, '..', 'package.json');
@@ -44,10 +45,23 @@ const program = new Command('api-change-run')
   .option('-i, --init', 'Trigger a run on the initial connection')
   .option('-s --script', 'Indicate that the given argument is a script that need to be run with npm (or yarn)')
   .option('-v, --verbose', 'Current working directory')
+  .option('-D, --daemon', 'Run the watching process as daemon')
   .action((command) => {
     commandTpl = command;
   })
   .parse();
 
-const subscription = startPolling({ ...program.opts(), commandTpl})
-process.on('exit', () => subscription.unsubscribe());
+const options = program.opts<PollUrlChangeOptions & {daemon: boolean}>();
+if (options.daemon) {
+  fork('./daemon.mjs', {
+    env: {
+      ...process.env,
+      POLLING_OPTIONS: JSON.stringify(options)
+    },
+    detached: true,
+    stdio: 'inherit'
+  });
+} else {
+  const subscription = startPolling({ ...options, commandTpl})
+  process.on('exit', () => subscription.unsubscribe());
+}

@@ -9,6 +9,9 @@ import {
   map,
 } from 'rxjs/operators';
 import logger from 'loglevel';
+import fetch from 'node-fetch';
+import type { Response } from 'node-fetch';
+import { Headers } from 'node-fetch';
 
 const isYarn = !!process.env.npm_execpath?.endsWith('yarn');
 
@@ -104,7 +107,7 @@ export async function retrieveAccessToken({ username, url, password }: LoginUser
 
   let value: {access_token: string} | null = null;
   try {
-    value = await res.json()
+    value = await res.json() as { access_token: string };
     logger.debug(`auth - Basic Auth response: ${JSON.stringify(value)}`);
   } catch { 
     // ignored
@@ -116,7 +119,7 @@ export async function retrieveAccessToken({ username, url, password }: LoginUser
 
     try {
       logger.debug(`auth - Basic Auth with body parameters response: ${JSON.stringify(value)}`);
-      value = await res.json()
+      value = await res.json() as { access_token: string };
     } catch {
       // ignored
     }

@@ -4,9 +4,8 @@ import {
   withLatestFrom,
   filter,
   switchMap,
-  pairwise,
-  startWith,
-  map,
+  distinctUntilChanged,
+  scan,
 } from 'rxjs/operators';
 import logger from 'loglevel';
 import fetch from 'node-fetch';
@@ -71,6 +70,7 @@ export interface PollUrlChangeOptions {
 export function generateCommand(commandTpl: string, script: boolean, response?: string): string {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-expect-error
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const RESPONSE = response || '';
   const command = eval(`\`${commandTpl}\``);
   return script ? `${isYarn ? 'yarn' : 'npm'} run ${command}` : command;
@@ -171,6 +171,7 @@ export function startPolling(options: PollUrlChangeOptions, executor: typeof exe
     filter(([res, downloading]) => !downloading && !!res && (res.status === 401 || res.status === 403)),
   )
 
+  let firstRun = true;
   const subscription = call$.pipe(
     filter((req) => {
       const ok = !!req && req.ok;
@@ -188,13 +189,12 @@ export function startPolling(options: PollUrlChangeOptions, executor: typeof exe
       return ok;
     }),
     switchMap((req) => req.text()),
-    startWith(undefined),
-    pairwise(),
-    filter(([prev, current]) => (init && !prev) || prev !== current),
-    map(([, current]) => current),
+    distinctUntilChanged(),
+    filter((res) => !!res || init && firstRun)
   )
   .subscribe({
     next: (response) => {
+      firstRun = false;
       runningCommandSubject.next(true);
       const command = generateCommand(commandTpl, script, response);
       logger.debug(`watcher - Run "${command}" in ${cwd}`);

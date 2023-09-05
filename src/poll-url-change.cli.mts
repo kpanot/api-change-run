@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { fork } from 'node:child_process';
+import { createRequire } from 'node:module'
 
 import { Command } from 'commander';
 import type { PackageJson } from 'type-fest';
@@ -12,7 +13,7 @@ import { BasicAuth, LoginUserPassword, PollUrlChangeOptions, startPolling } from
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageJsonPath = resolve(__dirname, '..', 'package.json');
-const { version } = JSON.parse(readFileSync(packageJsonPath, { encoding: 'utf8' })) as PackageJson;
+const { version, name } = JSON.parse(readFileSync(packageJsonPath, { encoding: 'utf8' })) as PackageJson;
 const basicAuthRegExp = /^(https?:\/\/)([^:@]+):([^@]+)@(.+)$/;
 
 let commandTpl!: string;
@@ -53,7 +54,8 @@ const program = new Command('api-change-run')
 
 const options = program.opts<PollUrlChangeOptions & {daemon: boolean}>();
 if (options.daemon) {
-  fork('./daemon.mjs', {
+  const require = createRequire(import.meta.url);
+  const handle = fork(resolve(dirname(require.resolve(name ||'api-change-run')), 'daemon.mjs'), {
     env: {
       ...process.env,
       POLLING_OPTIONS: JSON.stringify(options)
@@ -61,6 +63,8 @@ if (options.daemon) {
     detached: true,
     stdio: 'inherit'
   });
+  handle.unref();
+  handle.disconnect();
 } else {
   const subscription = startPolling({ ...options, commandTpl})
   process.on('exit', () => subscription.unsubscribe());

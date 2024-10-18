@@ -48,5 +48,5 @@
     "api-change-poll": "./dist/poll-url-change.cli.mjs",
     "api-change-run": "./dist/poll-url-change.cli.mjs"
   },
-  "packageManager": "yarn@3.6.3"
+  "packageManager": "yarn@4.5.1"
 }
